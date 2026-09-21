@@ -1,0 +1,6 @@
+{
+  "name": "Campus Eats",
+  "description": "Native Android university food-ordering application built with Kotlin, Jetpack Compose, Material 3, Room, and MVVM architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
