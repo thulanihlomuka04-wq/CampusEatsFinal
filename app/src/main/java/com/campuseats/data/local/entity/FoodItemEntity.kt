@@ -30,5 +30,6 @@ data class FoodItemEntity(
     val category: String, // e.g. "Breakfast", "Burgers", "Drinks", "Snacks"
     val isAvailable: Boolean = true,
     val calories: Int? = null,
-    val isVegetarian: Boolean = false
+    val isVegetarian: Boolean = false,
+    val imageUrl: String? = null
 )

@@ -6,6 +6,7 @@ import com.campuseats.data.local.dao.VendorDao
 import com.campuseats.data.local.entity.FoodItemEntity
 import com.campuseats.data.local.entity.OrderEntity
 import com.campuseats.data.local.entity.OrderStatus
+import com.campuseats.data.local.entity.OrderWithItems
 import com.campuseats.data.local.entity.VendorEntity
 import com.campuseats.utils.Resource
 import kotlinx.coroutines.Dispatchers
@@ -14,16 +15,19 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 interface VendorRepository {
+    fun getAllVendors(): Flow<List<VendorEntity>>
     fun getVendorDetails(vendorId: String): Flow<VendorEntity?>
     fun getFoodItemsForVendor(vendorId: String): Flow<List<FoodItemEntity>>
     fun getOrdersForVendor(vendorId: String): Flow<List<OrderEntity>>
+    fun getOrdersWithItemsForVendor(vendorId: String): Flow<List<OrderWithItems>>
     suspend fun addFoodItem(
         vendorId: String,
         name: String,
         description: String,
         price: Double,
         category: String,
-        isVegetarian: Boolean
+        isVegetarian: Boolean,
+        imageUrl: String? = null
     ): Resource<Unit>
     suspend fun updateFoodItem(item: FoodItemEntity): Resource<Unit>
     suspend fun toggleFoodAvailability(item: FoodItemEntity): Resource<Unit>
@@ -37,6 +41,9 @@ class VendorRepositoryImpl(
     private val orderDao: OrderDao
 ) : VendorRepository {
 
+    override fun getAllVendors(): Flow<List<VendorEntity>> =
+        vendorDao.getAllVendors()
+
     override fun getVendorDetails(vendorId: String): Flow<VendorEntity?> =
         vendorDao.observeVendorById(vendorId)
 
@@ -46,13 +53,17 @@ class VendorRepositoryImpl(
     override fun getOrdersForVendor(vendorId: String): Flow<List<OrderEntity>> =
         orderDao.getOrdersByVendor(vendorId)
 
+    override fun getOrdersWithItemsForVendor(vendorId: String): Flow<List<OrderWithItems>> =
+        orderDao.getOrdersWithItemsByVendor(vendorId)
+
     override suspend fun addFoodItem(
         vendorId: String,
         name: String,
         description: String,
         price: Double,
         category: String,
-        isVegetarian: Boolean
+        isVegetarian: Boolean,
+        imageUrl: String?
     ): Resource<Unit> = withContext(Dispatchers.IO) {
         try {
             val item = FoodItemEntity(
@@ -63,7 +74,8 @@ class VendorRepositoryImpl(
                 price = price,
                 category = category.trim(),
                 isAvailable = true,
-                isVegetarian = isVegetarian
+                isVegetarian = isVegetarian,
+                imageUrl = imageUrl?.trim()?.ifBlank { null }
             )
             foodItemDao.insertFoodItem(item)
             Resource.Success(Unit)

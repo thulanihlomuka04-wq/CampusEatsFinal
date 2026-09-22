@@ -31,6 +31,12 @@ interface FoodItemDao {
     @Query("SELECT vendorId, COUNT(*) as count FROM food_items WHERE isAvailable = 1 GROUP BY vendorId")
     fun getAvailableFoodCountsGrouped(): Flow<List<VendorItemCount>>
 
+    @Query("SELECT vendorId, COUNT(*) as count FROM food_items GROUP BY vendorId")
+    fun getTotalFoodCountsGrouped(): Flow<List<VendorItemCount>>
+
+    @Query("SELECT * FROM food_items")
+    fun getAllFoodItems(): Flow<List<FoodItemEntity>>
+
     @Query("SELECT * FROM food_items WHERE id = :itemId LIMIT 1")
     suspend fun getFoodItemById(itemId: String): FoodItemEntity?
 

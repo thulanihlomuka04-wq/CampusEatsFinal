@@ -56,6 +56,10 @@ class AuthRepositoryImpl(
                 return@withContext Resource.Error("Incorrect password. Please verify your credentials and try again.")
             }
 
+            if (!user.isActive) {
+                return@withContext Resource.Error("This account has been disabled by an administrator. Please contact campus administration.")
+            }
+
             // Persist session into SharedPreferences (passwords are NEVER stored)
             sessionManager.saveSession(
                 userId = user.id,

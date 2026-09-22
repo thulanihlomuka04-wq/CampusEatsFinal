@@ -1,0 +1,341 @@
+package com.campuseats.data.xml
+
+import android.util.Xml
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserException
+import org.xmlpull.v1.XmlPullParserFactory
+import java.io.InputStream
+import java.io.StringReader
+
+/**
+ * Android XMLPullParser implementation for Campus Eats.
+ * Demonstrates streaming, forward-only XML event parsing (START_TAG, TEXT, END_TAG)
+ * mapping hierarchical XML nodes to strongly typed Kotlin data models.
+ */
+class CampusFoodXmlParser {
+
+    data class ParseResult(
+        val data: XmlCampusDining,
+        val metrics: XmlParseMetrics,
+        val rawXml: String
+    )
+
+    /**
+     * Parses an XML string with performance and telemetry metrics.
+     */
+    fun parse(xmlString: String): ParseResult {
+        val startTime = System.currentTimeMillis()
+        var tagsCount = 0
+        var attributesCount = 0
+
+        val parser: XmlPullParser = try {
+            Xml.newPullParser()
+        } catch (e: Throwable) {
+            val factory = XmlPullParserFactory.newInstance()
+            factory.isNamespaceAware = false
+            factory.newPullParser()
+        }
+
+        parser.setInput(StringReader(xmlString))
+
+        var eventType = parser.eventType
+        var campus = ""
+        var version = ""
+        var generated = ""
+        var source = ""
+        var metadata = XmlCampusMetadata()
+        val vendors = mutableListOf<XmlVendor>()
+
+        // Temporary parsing state
+        var currentVendorBuilder: VendorBuilder? = null
+        var currentItemBuilder: ItemBuilder? = null
+        var currentTag = ""
+
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            when (eventType) {
+                XmlPullParser.START_TAG -> {
+                    tagsCount++
+                    currentTag = parser.name
+                    val attrCount = parser.attributeCount
+                    if (attrCount > 0) {
+                        attributesCount += attrCount
+                    }
+
+                    when (currentTag) {
+                        "campusDining" -> {
+                            campus = parser.getAttributeValue(null, "campus") ?: ""
+                            version = parser.getAttributeValue(null, "version") ?: ""
+                            generated = parser.getAttributeValue(null, "generated") ?: ""
+                            source = parser.getAttributeValue(null, "source") ?: ""
+                        }
+                        "vendor" -> {
+                            currentVendorBuilder = VendorBuilder(
+                                id = parser.getAttributeValue(null, "id") ?: "UNKNOWN",
+                                category = parser.getAttributeValue(null, "category") ?: "General",
+                                status = parser.getAttributeValue(null, "status") ?: "OPEN"
+                            )
+                        }
+                        "item" -> {
+                            val isVeg = parser.getAttributeValue(null, "vegetarian")?.toBoolean() ?: false
+                            currentItemBuilder = ItemBuilder(
+                                id = parser.getAttributeValue(null, "id") ?: "ITEM-0",
+                                isVegetarian = isVeg
+                            )
+                        }
+                    }
+                }
+
+                XmlPullParser.TEXT -> {
+                    val text = parser.text?.trim() ?: ""
+                    if (text.isNotEmpty()) {
+                        when (currentTag) {
+                            "title" -> metadata = metadata.copy(title = text)
+                            "curriculumTopic" -> metadata = metadata.copy(curriculumTopic = text)
+                            "academicYear" -> metadata = metadata.copy(academicYear = text)
+                            "semester" -> metadata = metadata.copy(semester = text)
+
+                            // Vendor fields (if not inside an item)
+                            "name" -> {
+                                if (currentItemBuilder != null) {
+                                    currentItemBuilder.name = text
+                                } else if (currentVendorBuilder != null) {
+                                    currentVendorBuilder.name = text
+                                }
+                            }
+                            "building" -> currentVendorBuilder?.building = text
+                            "rating" -> currentVendorBuilder?.rating = text.toDoubleOrNull() ?: 0.0
+                            "openingHours" -> currentVendorBuilder?.openingHours = text
+                            "acceptsStudentCard" -> currentVendorBuilder?.acceptsStudentCard = text.toBoolean()
+                            "contactEmail" -> currentVendorBuilder?.contactEmail = text
+
+                            // Item fields
+                            "category" -> {
+                                if (currentItemBuilder != null) {
+                                    currentItemBuilder.category = text
+                                }
+                            }
+                            "price" -> currentItemBuilder?.price = text.toDoubleOrNull() ?: 0.0
+                            "calories" -> currentItemBuilder?.calories = text.toIntOrNull() ?: 0
+                            "allergens" -> currentItemBuilder?.allergens = text
+                            "description" -> currentItemBuilder?.description = text
+                        }
+                    }
+                }
+
+                XmlPullParser.END_TAG -> {
+                    when (parser.name) {
+                        "item" -> {
+                            currentItemBuilder?.let { builder ->
+                                currentVendorBuilder?.menuItems?.add(builder.build())
+                            }
+                            currentItemBuilder = null
+                        }
+                        "vendor" -> {
+                            currentVendorBuilder?.let { builder ->
+                                vendors.add(builder.build())
+                            }
+                            currentVendorBuilder = null
+                        }
+                    }
+                    currentTag = ""
+                }
+            }
+            eventType = parser.next()
+        }
+
+        val elapsed = (System.currentTimeMillis() - startTime).coerceAtLeast(1L)
+        val diningData = XmlCampusDining(
+            campus = campus,
+            version = version,
+            generatedDate = generated,
+            source = source,
+            metadata = metadata,
+            vendors = vendors
+        )
+
+        val metrics = XmlParseMetrics(
+            durationMs = elapsed,
+            tagsEncountered = tagsCount,
+            attributesProcessed = attributesCount,
+            rawXmlBytes = xmlString.toByteArray().size
+        )
+
+        return ParseResult(
+            data = diningData,
+            metrics = metrics,
+            rawXml = xmlString
+        )
+    }
+
+    /**
+     * Parses from an InputStream and closes it when done.
+     */
+    fun parse(inputStream: InputStream): ParseResult {
+        val xmlText = inputStream.bufferedReader().use { it.readText() }
+        return parse(xmlText)
+    }
+
+    private class VendorBuilder(
+        val id: String,
+        val category: String,
+        val status: String
+    ) {
+        var name: String = ""
+        var building: String = ""
+        var rating: Double = 0.0
+        var openingHours: String = ""
+        var acceptsStudentCard: Boolean = false
+        var contactEmail: String = ""
+        val menuItems = mutableListOf<XmlFoodItem>()
+
+        fun build(): XmlVendor = XmlVendor(
+            id = id,
+            name = name,
+            category = category,
+            status = status,
+            building = building,
+            rating = rating,
+            openingHours = openingHours,
+            acceptsStudentCard = acceptsStudentCard,
+            contactEmail = contactEmail,
+            menuItems = menuItems.toList()
+        )
+    }
+
+    private class ItemBuilder(
+        val id: String,
+        val isVegetarian: Boolean
+    ) {
+        var name: String = ""
+        var category: String = ""
+        var price: Double = 0.0
+        var calories: Int = 0
+        var allergens: String = "None"
+        var description: String = ""
+
+        fun build(): XmlFoodItem = XmlFoodItem(
+            id = id,
+            name = name,
+            category = category,
+            price = price,
+            calories = calories,
+            isVegetarian = isVegetarian,
+            allergens = allergens,
+            description = description
+        )
+    }
+
+    companion object {
+        /**
+         * Embedded fallback XML sample to guarantee instant testing even in mock environments
+         * or when reading directly from code without Android resource lookup.
+         */
+        val DEFAULT_SAMPLE_XML = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <campusDining campus="University Main Campus" version="1.2" generated="2026-09-22" source="Campus Dining Admin Service">
+                <metadata>
+                    <title>University Food &amp; Vendor Directory</title>
+                    <curriculumTopic>Android XMLPullParser &amp; Hierarchical Data Processing</curriculumTopic>
+                    <academicYear>2026</academicYear>
+                    <semester>Semester 2</semester>
+                </metadata>
+                <vendors>
+                    <vendor id="VND-XML-01" category="Grill &amp; Fast Food" status="OPEN">
+                        <name>The Crimson Grill</name>
+                        <building>Student Union Building - Ground Floor</building>
+                        <rating>4.7</rating>
+                        <openingHours>08:00 - 18:00</openingHours>
+                        <acceptsStudentCard>true</acceptsStudentCard>
+                        <contactEmail>crimsongrill@campus.ac.za</contactEmail>
+                        <menuItems>
+                            <item id="ITEM-XML-101" vegetarian="false">
+                                <name>Braai Beef Burger &amp; Chips</name>
+                                <category>Mains</category>
+                                <price>58.50</price>
+                                <calories>680</calories>
+                                <allergens>Gluten, Dairy</allergens>
+                                <description>Flame-grilled beef patty with caramelized onions, tangy BBQ relish, and seasoned rustic chips.</description>
+                            </item>
+                            <item id="ITEM-XML-102" vegetarian="true">
+                                <name>Chargrilled Halloumi Wrap</name>
+                                <category>Wraps</category>
+                                <price>46.00</price>
+                                <calories>440</calories>
+                                <allergens>Dairy, Gluten</allergens>
+                                <description>Grilled halloumi cheese with fresh garden rocket, roasted sweet peppers, and creamy tzatziki.</description>
+                            </item>
+                            <item id="ITEM-XML-103" vegetarian="false">
+                                <name>Peri-Peri Chicken Strips</name>
+                                <category>Mains</category>
+                                <price>42.00</price>
+                                <calories>510</calories>
+                                <allergens>None</allergens>
+                                <description>Spicy marinated chicken breast tenders served with homemade mild peri-peri dipping sauce.</description>
+                            </item>
+                        </menuItems>
+                    </vendor>
+                    <vendor id="VND-XML-02" category="Bakery &amp; Cafe" status="OPEN">
+                        <name>Green Leaf Artisan Bakery</name>
+                        <building>Science Quad Pavilion</building>
+                        <rating>4.9</rating>
+                        <openingHours>07:30 - 16:30</openingHours>
+                        <acceptsStudentCard>true</acceptsStudentCard>
+                        <contactEmail>greenleaf@campus.ac.za</contactEmail>
+                        <menuItems>
+                            <item id="ITEM-XML-201" vegetarian="true">
+                                <name>Spinach &amp; Feta Puff Pastry</name>
+                                <category>Pastries</category>
+                                <price>24.50</price>
+                                <calories>320</calories>
+                                <allergens>Gluten, Dairy, Eggs</allergens>
+                                <description>Flaky golden puff pastry roll stuffed with seasoned creamed spinach, crumbled feta, and nutmeg.</description>
+                            </item>
+                            <item id="ITEM-XML-202" vegetarian="true">
+                                <name>Avocado &amp; Chickpea Salad Bowl</name>
+                                <category>Salads</category>
+                                <price>48.00</price>
+                                <calories>390</calories>
+                                <allergens>Sesame</allergens>
+                                <description>Mixed crispy greens, spiced roasted chickpeas, sliced Hass avocado, cherry tomatoes, and lemon tahini dressing.</description>
+                            </item>
+                            <item id="ITEM-XML-203" vegetarian="true">
+                                <name>Double Shot Espresso Macchiato</name>
+                                <category>Beverages</category>
+                                <price>22.00</price>
+                                <calories>35</calories>
+                                <allergens>Dairy</allergens>
+                                <description>Locally roasted Ethiopian blend espresso marked with a dollop of velvety steamed micro-foam.</description>
+                            </item>
+                        </menuItems>
+                    </vendor>
+                    <vendor id="VND-XML-03" category="Smoothies &amp; Health" status="OPEN">
+                        <name>Zen Pulse Smoothie Bar</name>
+                        <building>Sports Centre Complex</building>
+                        <rating>4.6</rating>
+                        <openingHours>08:30 - 17:00</openingHours>
+                        <acceptsStudentCard>false</acceptsStudentCard>
+                        <contactEmail>zenpulse@campus.ac.za</contactEmail>
+                        <menuItems>
+                            <item id="ITEM-XML-301" vegetarian="true">
+                                <name>Tropical Mango &amp; Chia Blend</name>
+                                <category>Smoothies</category>
+                                <price>35.00</price>
+                                <calories>260</calories>
+                                <allergens>None</allergens>
+                                <description>Blended Alphonso mango chunks, organic chia seeds, pineapple juice, and chilled coconut water.</description>
+                            </item>
+                            <item id="ITEM-XML-302" vegetarian="true">
+                                <name>Peanut Butter Protein Booster</name>
+                                <category>Shakes</category>
+                                <price>42.00</price>
+                                <calories>480</calories>
+                                <allergens>Peanuts, Dairy</allergens>
+                                <description>Whey protein isolate blended with organic peanut butter, ripe bananas, oat milk, and dark cocoa nibs.</description>
+                            </item>
+                        </menuItems>
+                    </vendor>
+                </vendors>
+            </campusDining>
+        """.trimIndent()
+    }
+}

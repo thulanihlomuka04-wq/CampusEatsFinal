@@ -30,6 +30,12 @@ interface UserDao {
     @Query("SELECT COUNT(*) FROM users")
     fun getUserCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM users WHERE role = :role")
+    fun getUserCountByRole(role: UserRole): Flow<Int>
+
+    @Query("UPDATE users SET isActive = :isActive WHERE id = :userId")
+    suspend fun setUserActiveStatus(userId: String, isActive: Boolean)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: UserEntity)
 

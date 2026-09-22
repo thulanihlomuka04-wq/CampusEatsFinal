@@ -16,9 +16,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -46,12 +51,17 @@ fun AdminDashboardScreen(
     onNavigateToUserManagement: () -> Unit,
     onNavigateToVendorManagement: () -> Unit,
     onNavigateToReports: () -> Unit,
+    onNavigateToRemoteDemo: () -> Unit = {},
+    onNavigateToXmlDemo: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val adminName by viewModel.adminName.collectAsState()
     val userCount by viewModel.userCount.collectAsState()
+    val studentCount by viewModel.studentCount.collectAsState()
     val vendorCount by viewModel.vendorCount.collectAsState()
     val orderCount by viewModel.orderCount.collectAsState()
+    val pendingOrdersCount by viewModel.pendingOrdersCount.collectAsState()
+    val completedOrdersCount by viewModel.completedOrdersCount.collectAsState()
     val totalRevenue by viewModel.totalRevenue.collectAsState()
 
     Scaffold(
@@ -119,22 +129,30 @@ fun AdminDashboardScreen(
                 }
             }
 
-            // Stat Cards
+            // Stat Cards - Room Database Aggregates
+            item {
+                Text(
+                    text = "Key Campus Metrics",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     AdminMetricTile(
-                        title = "Registered Users",
+                        title = "Total Users",
                         value = "$userCount",
                         icon = Icons.Default.People,
                         modifier = Modifier.weight(1f)
                     )
                     AdminMetricTile(
-                        title = "Campus Vendors",
-                        value = "$vendorCount",
-                        icon = Icons.Default.Store,
+                        title = "Total Students",
+                        value = "$studentCount",
+                        icon = Icons.Default.School,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -146,18 +164,47 @@ fun AdminDashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     AdminMetricTile(
+                        title = "Total Vendors",
+                        value = "$vendorCount",
+                        icon = Icons.Default.Store,
+                        modifier = Modifier.weight(1f)
+                    )
+                    AdminMetricTile(
                         title = "Total Orders",
                         value = "$orderCount",
                         icon = Icons.Default.Receipt,
                         modifier = Modifier.weight(1f)
                     )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     AdminMetricTile(
-                        title = "Platform Sales",
-                        value = CurrencyFormatter.format(totalRevenue ?: 0.0),
-                        icon = Icons.Default.AttachMoney,
+                        title = "Pending Orders",
+                        value = "$pendingOrdersCount",
+                        icon = Icons.Default.HourglassTop,
+                        modifier = Modifier.weight(1f)
+                    )
+                    AdminMetricTile(
+                        title = "Completed Orders",
+                        value = "$completedOrdersCount",
+                        icon = Icons.Default.CheckCircle,
                         modifier = Modifier.weight(1f)
                     )
                 }
+            }
+
+            item {
+                AdminMetricTile(
+                    title = "Total Platform Revenue (Completed Orders)",
+                    value = CurrencyFormatter.format(totalRevenue ?: 0.0),
+                    icon = Icons.Default.AttachMoney,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             item {
@@ -192,6 +239,24 @@ fun AdminDashboardScreen(
                     subtitle = "Audit food trends, sales performance, and order statuses",
                     icon = Icons.Default.Assessment,
                     onClick = onNavigateToReports
+                )
+            }
+
+            item {
+                AdminActionTile(
+                    title = "Remote Data Demo (HTTP & JSON)",
+                    subtitle = "Demonstrate live external API calls, async IO coroutines & JSON parsing",
+                    icon = Icons.Default.Wifi,
+                    onClick = onNavigateToRemoteDemo
+                )
+            }
+
+            item {
+                AdminActionTile(
+                    title = "XML Data Demo (XmlPullParser)",
+                    subtitle = "Demonstrate hierarchical Android XML parsing & data class conversion",
+                    icon = Icons.Default.Code,
+                    onClick = onNavigateToXmlDemo
                 )
             }
         }

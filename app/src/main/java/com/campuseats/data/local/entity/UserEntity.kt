@@ -17,5 +17,6 @@ data class UserEntity(
     val studentOrStaffId: String,
     val role: UserRole,
     val phoneNumber: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isActive: Boolean = true
 )

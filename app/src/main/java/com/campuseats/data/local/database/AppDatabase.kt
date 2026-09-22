@@ -13,6 +13,7 @@ import com.campuseats.data.local.dao.VendorDao
 import com.campuseats.data.local.entity.FoodItemEntity
 import com.campuseats.data.local.entity.OrderEntity
 import com.campuseats.data.local.entity.OrderItemEntity
+import com.campuseats.data.local.entity.OrderStatus
 import com.campuseats.data.local.entity.UserEntity
 import com.campuseats.data.local.entity.VendorEntity
 import com.campuseats.security.PasswordHasher
@@ -32,7 +33,7 @@ import kotlinx.coroutines.launch
         OrderEntity::class,
         OrderItemEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -181,7 +182,8 @@ abstract class AppDatabase : RoomDatabase() {
                         rating = 4.8,
                         isOpen = true,
                         openingHours = "08:30 - 18:00",
-                        estimatedPrepTimeMinutes = 15
+                        estimatedPrepTimeMinutes = 15,
+                        vendorEmail = "vendor@campuseats.com"
                     ),
                     VendorEntity(
                         id = "vendor_2",
@@ -191,7 +193,8 @@ abstract class AppDatabase : RoomDatabase() {
                         rating = 4.6,
                         isOpen = true,
                         openingHours = "07:30 - 16:30",
-                        estimatedPrepTimeMinutes = 10
+                        estimatedPrepTimeMinutes = 10,
+                        vendorEmail = "cafe@campuseats.ac.za"
                     ),
                     VendorEntity(
                         id = "vendor_3",
@@ -201,7 +204,8 @@ abstract class AppDatabase : RoomDatabase() {
                         rating = 4.7,
                         isOpen = true,
                         openingHours = "09:00 - 15:30",
-                        estimatedPrepTimeMinutes = 12
+                        estimatedPrepTimeMinutes = 12,
+                        vendorEmail = "greenbowl@campuseats.ac.za"
                     )
                 )
                 vendorDao.insertVendors(vendors)
@@ -285,6 +289,125 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 )
                 foodItemDao.insertFoodItems(cafeFoods)
+
+                // Seed Initial Realistic Orders & Line Items across statuses for genuine database aggregation
+                val orderDao = database.orderDao()
+                val initialOrders = listOf(
+                    OrderEntity(
+                        id = "order_seed_1",
+                        orderNumber = "ORD-9021",
+                        studentId = "user_student_1",
+                        studentName = "Thulani Hlomuka",
+                        vendorId = "vendor_1",
+                        vendorName = "Varsity Grill & Burgers",
+                        totalAmount = 111.00,
+                        status = OrderStatus.COLLECTED,
+                        notes = "No onions please",
+                        pickupPin = "4819",
+                        createdAt = System.currentTimeMillis() - 7200000
+                    ),
+                    OrderEntity(
+                        id = "order_seed_2",
+                        orderNumber = "ORD-9022",
+                        studentId = "user_student_primary",
+                        studentName = "Campus Student",
+                        vendorId = "vendor_1",
+                        vendorName = "Varsity Grill & Burgers",
+                        totalAmount = 85.00,
+                        status = OrderStatus.PREPARING,
+                        notes = "Extra crispy bacon",
+                        pickupPin = "7731",
+                        createdAt = System.currentTimeMillis() - 1800000
+                    ),
+                    OrderEntity(
+                        id = "order_seed_3",
+                        orderNumber = "ORD-9023",
+                        studentId = "user_student_1",
+                        studentName = "Thulani Hlomuka",
+                        vendorId = "vendor_1",
+                        vendorName = "Varsity Grill & Burgers",
+                        totalAmount = 68.00,
+                        status = OrderStatus.PLACED,
+                        notes = "Mild sauce",
+                        pickupPin = "2156",
+                        createdAt = System.currentTimeMillis() - 600000
+                    ),
+                    OrderEntity(
+                        id = "order_seed_4",
+                        orderNumber = "ORD-9024",
+                        studentId = "user_student_primary",
+                        studentName = "Campus Student",
+                        vendorId = "vendor_2",
+                        vendorName = "Campus Brew & Cafe",
+                        totalAmount = 70.00,
+                        status = OrderStatus.COLLECTED,
+                        notes = "Oat milk if available",
+                        pickupPin = "9042",
+                        createdAt = System.currentTimeMillis() - 10800000
+                    )
+                )
+
+                val initialOrderItems = listOf(
+                    OrderItemEntity(
+                        id = "item_1_1",
+                        orderId = "order_seed_1",
+                        foodItemId = "food_101",
+                        foodName = "Classic Smash Burger",
+                        unitPrice = 65.00,
+                        quantity = 1
+                    ),
+                    OrderItemEntity(
+                        id = "item_1_2",
+                        orderId = "order_seed_1",
+                        foodItemId = "food_104",
+                        foodName = "Seasoned Campus Fries",
+                        unitPrice = 28.00,
+                        quantity = 1
+                    ),
+                    OrderItemEntity(
+                        id = "item_1_3",
+                        orderId = "order_seed_1",
+                        foodItemId = "food_105",
+                        foodName = "Chilled Soft Drink 440ml",
+                        unitPrice = 18.00,
+                        quantity = 1
+                    ),
+                    OrderItemEntity(
+                        id = "item_2_1",
+                        orderId = "order_seed_2",
+                        foodItemId = "food_102",
+                        foodName = "Double Bacon Cheeseburger",
+                        unitPrice = 85.00,
+                        quantity = 1
+                    ),
+                    OrderItemEntity(
+                        id = "item_3_1",
+                        orderId = "order_seed_3",
+                        foodItemId = "food_103",
+                        foodName = "Peri-Peri Chicken Burger",
+                        unitPrice = 68.00,
+                        quantity = 1
+                    ),
+                    OrderItemEntity(
+                        id = "item_4_1",
+                        orderId = "order_seed_4",
+                        foodItemId = "food_201",
+                        foodName = "Flat White Coffee",
+                        unitPrice = 32.00,
+                        quantity = 1
+                    ),
+                    OrderItemEntity(
+                        id = "item_4_2",
+                        orderId = "order_seed_4",
+                        foodItemId = "food_202",
+                        foodName = "Toasted Cheese & Tomato",
+                        unitPrice = 38.00,
+                        quantity = 1
+                    )
+                )
+
+                initialOrders.forEach { orderDao.insertOrder(it) }
+                orderDao.insertOrderItems(initialOrderItems)
             }
         }
     }

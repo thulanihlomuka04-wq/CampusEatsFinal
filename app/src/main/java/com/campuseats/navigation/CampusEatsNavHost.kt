@@ -17,6 +17,10 @@ import com.campuseats.ui.admin.VendorManagementScreen
 import com.campuseats.ui.auth.AuthViewModel
 import com.campuseats.ui.auth.LoginScreen
 import com.campuseats.ui.auth.RegisterScreen
+import com.campuseats.ui.demo.RemoteDemoScreen
+import com.campuseats.ui.demo.RemoteDemoViewModel
+import com.campuseats.ui.demo.XmlDemoScreen
+import com.campuseats.ui.demo.XmlDemoViewModel
 import com.campuseats.ui.student.CartScreen
 import com.campuseats.ui.student.MenuScreen
 import com.campuseats.ui.student.OrderHistoryScreen
@@ -40,6 +44,8 @@ fun CampusEatsNavHost(
     studentViewModel: StudentViewModel,
     vendorViewModel: VendorViewModel,
     adminViewModel: AdminViewModel,
+    remoteDemoViewModel: RemoteDemoViewModel = RemoteDemoViewModel(),
+    xmlDemoViewModel: XmlDemoViewModel = XmlDemoViewModel(),
     modifier: Modifier = Modifier
 ) {
     // Startup routing based on active session
@@ -156,6 +162,12 @@ fun CampusEatsNavHost(
                     },
                     onNavigateToHistory = {
                         navController.navigate(NavRoutes.OrderHistory.route)
+                    },
+                    onNavigateToRemoteDemo = {
+                        navController.navigate(NavRoutes.RemoteDataDemo.route)
+                    },
+                    onNavigateToXmlDemo = {
+                        navController.navigate(NavRoutes.XmlDataDemo.route)
                     }
                 )
             }
@@ -296,6 +308,8 @@ fun CampusEatsNavHost(
                     onNavigateToUserManagement = { navController.navigate(NavRoutes.UserManagement.route) },
                     onNavigateToVendorManagement = { navController.navigate(NavRoutes.VendorManagement.route) },
                     onNavigateToReports = { navController.navigate(NavRoutes.Reports.route) },
+                    onNavigateToRemoteDemo = { navController.navigate(NavRoutes.RemoteDataDemo.route) },
+                    onNavigateToXmlDemo = { navController.navigate(NavRoutes.XmlDataDemo.route) },
                     onLogout = onLogoutAction
                 )
             }
@@ -347,6 +361,31 @@ fun CampusEatsNavHost(
                     onNavigateToVendors = { navController.navigate(NavRoutes.VendorManagement.route) }
                 )
             }
+        }
+
+        // --- NETWORKING & REMOTE API DEMONSTRATION FLOW ---
+        composable(NavRoutes.RemoteDataDemo.route) {
+            RemoteDemoScreen(
+                viewModel = remoteDemoViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToLocalVendors = {
+                    navController.navigate(NavRoutes.Vendors.route)
+                },
+                onNavigateToXmlDemo = {
+                    navController.navigate(NavRoutes.XmlDataDemo.route)
+                }
+            )
+        }
+
+        // --- XML DATA PROCESSING DEMONSTRATION FLOW ---
+        composable(NavRoutes.XmlDataDemo.route) {
+            XmlDemoScreen(
+                viewModel = xmlDemoViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToLocalVendors = {
+                    navController.navigate(NavRoutes.Vendors.route)
+                }
+            )
         }
     }
 }

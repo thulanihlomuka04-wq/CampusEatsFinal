@@ -38,6 +38,9 @@ interface VendorDao {
     @Update
     suspend fun updateVendor(vendor: VendorEntity)
 
+    @Query("UPDATE vendors SET vendorEmail = :email WHERE id = :vendorId")
+    suspend fun updateVendorEmail(vendorId: String, email: String)
+
     @Delete
     suspend fun deleteVendor(vendor: VendorEntity)
 }

@@ -10,6 +10,7 @@ import com.campuseats.data.repository.StudentRepository
 import com.campuseats.data.repository.StudentRepositoryImpl
 import com.campuseats.data.repository.VendorRepository
 import com.campuseats.data.repository.VendorRepositoryImpl
+import com.campuseats.data.network.demo.repository.RemoteDemoRepository
 import com.campuseats.security.SessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +54,16 @@ class CampusEatsApp : Application() {
         AdminRepositoryImpl(
             userDao = database.userDao(),
             vendorDao = database.vendorDao(),
-            orderDao = database.orderDao()
+            orderDao = database.orderDao(),
+            foodItemDao = database.foodItemDao()
         )
+    }
+
+    val remoteDemoRepository: RemoteDemoRepository by lazy {
+        RemoteDemoRepository()
+    }
+
+    val xmlDemoRepository: com.campuseats.data.repository.XmlDemoRepository by lazy {
+        com.campuseats.data.repository.XmlDemoRepository(context = this)
     }
 }

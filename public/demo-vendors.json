@@ -1,0 +1,81 @@
+{
+  "status": "success",
+  "campus": "Main Campus Food Village",
+  "generatedAt": "2026-09-22T10:30:00Z",
+  "vendorCount": 2,
+  "endpointDocumentation": "Campus Eats Real HTTP REST demonstration endpoint providing remote cafeteria data.",
+  "vendors": [
+    {
+      "id": "remote-v1",
+      "name": "The Daily Roast & Artisan Bakery",
+      "location": "Student Commons, 2nd Floor",
+      "openingHours": "07:30 - 18:00",
+      "rating": 4.8,
+      "isOpen": true,
+      "description": "Specialty espresso bar, handcrafted cold brews, and fresh morning pastries delivered daily.",
+      "menuItems": [
+        {
+          "id": "remote-f1",
+          "name": "Caramel Macchiato",
+          "description": "Double espresso shot layered with steamed oat milk, vanilla bean syrup, and caramel drizzle.",
+          "price": 38.50,
+          "category": "BEVERAGES",
+          "isVegetarian": true,
+          "calories": 240,
+          "isAvailable": true
+        },
+        {
+          "id": "remote-f2",
+          "name": "Almond Croissant",
+          "description": "Flaky double-baked French croissant filled with sweet almond frangipane cream.",
+          "price": 28.00,
+          "category": "BAKERY",
+          "isVegetarian": true,
+          "calories": 360,
+          "isAvailable": true
+        },
+        {
+          "id": "remote-f3",
+          "name": "Smoked Turkey & Pesto Panini",
+          "description": "Toasted sourdough with smoked turkey breast, mozzarella, basil pesto, and baby arugula.",
+          "price": 54.00,
+          "category": "MAINS",
+          "isVegetarian": false,
+          "calories": 520,
+          "isAvailable": true
+        }
+      ]
+    },
+    {
+      "id": "remote-v2",
+      "name": "Green Harvest Superfood Bar",
+      "location": "Wellness & Sports Complex",
+      "openingHours": "08:00 - 17:00",
+      "rating": 4.9,
+      "isOpen": true,
+      "description": "Nutrient-packed grain bowls, crisp salads, cold-pressed raw juices, and protein smoothies.",
+      "menuItems": [
+        {
+          "id": "remote-f4",
+          "name": "Mediterranean Quinoa Bowl",
+          "description": "Warm organic quinoa, kalamata olives, cherry tomatoes, Persian cucumbers, feta, and lemon tahini.",
+          "price": 62.00,
+          "category": "MAINS",
+          "isVegetarian": true,
+          "calories": 410,
+          "isAvailable": true
+        },
+        {
+          "id": "remote-f5",
+          "name": "Cold-Pressed Citrus Immunity Booster",
+          "description": "Raw unpasteurized juice blend of Valencia orange, organic carrot, fresh ginger root, and turmeric.",
+          "price": 34.00,
+          "category": "BEVERAGES",
+          "isVegetarian": true,
+          "calories": 130,
+          "isAvailable": true
+        }
+      ]
+    }
+  ]
+}

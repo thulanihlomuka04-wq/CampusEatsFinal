@@ -17,5 +17,6 @@ data class VendorEntity(
     val isOpen: Boolean = true,
     val contactNumber: String = "",
     val openingHours: String = "08:00 - 17:00",
-    val estimatedPrepTimeMinutes: Int = 15
+    val estimatedPrepTimeMinutes: Int = 15,
+    val vendorEmail: String = ""
 )

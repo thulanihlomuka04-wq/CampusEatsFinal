@@ -12,6 +12,8 @@ import androidx.navigation.compose.rememberNavController
 import com.campuseats.navigation.CampusEatsNavHost
 import com.campuseats.ui.admin.AdminViewModel
 import com.campuseats.ui.auth.AuthViewModel
+import com.campuseats.ui.demo.RemoteDemoViewModel
+import com.campuseats.ui.demo.XmlDemoViewModel
 import com.campuseats.ui.student.StudentViewModel
 import com.campuseats.ui.theme.CampusEatsTheme
 import com.campuseats.ui.vendor.VendorViewModel
@@ -32,6 +34,8 @@ class MainActivity : ComponentActivity() {
         val studentViewModel = StudentViewModel(app.studentRepository, app.sessionManager)
         val vendorViewModel = VendorViewModel(app.vendorRepository, app.sessionManager)
         val adminViewModel = AdminViewModel(app.adminRepository, app.sessionManager)
+        val remoteDemoViewModel = RemoteDemoViewModel(app.remoteDemoRepository, app.database.vendorDao())
+        val xmlDemoViewModel = XmlDemoViewModel(app.xmlDemoRepository)
 
         setContent {
             CampusEatsTheme {
@@ -45,7 +49,9 @@ class MainActivity : ComponentActivity() {
                         authViewModel = authViewModel,
                         studentViewModel = studentViewModel,
                         vendorViewModel = vendorViewModel,
-                        adminViewModel = adminViewModel
+                        adminViewModel = adminViewModel,
+                        remoteDemoViewModel = remoteDemoViewModel,
+                        xmlDemoViewModel = xmlDemoViewModel
                     )
                 }
             }

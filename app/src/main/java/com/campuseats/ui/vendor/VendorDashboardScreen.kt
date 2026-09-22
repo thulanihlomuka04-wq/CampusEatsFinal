@@ -11,18 +11,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,12 +40,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.campuseats.data.local.entity.OrderStatus
 import com.campuseats.navigation.NavRoutes
 import com.campuseats.security.UserRole
 import com.campuseats.ui.components.CampusEatsBottomBar
 import com.campuseats.ui.components.CampusEatsTopBar
 import com.campuseats.ui.components.RoleIndicatorCard
+import com.campuseats.ui.components.StatusBadge
 import com.campuseats.utils.CurrencyFormatter
 
 @Composable
@@ -48,15 +57,25 @@ fun VendorDashboardScreen(
     onNavigateToOrders: () -> Unit,
     onLogout: () -> Unit
 ) {
+    val currentVendorId by viewModel.currentVendorId.collectAsState()
+    val allVendors by viewModel.allVendors.collectAsState()
     val vendor by viewModel.vendorDetails.collectAsState(initial = null)
     val foodItems by viewModel.foodItems.collectAsState()
     val orders by viewModel.orders.collectAsState()
 
-    val pendingOrdersCount = orders.count { it.status == OrderStatus.PLACED || it.status == OrderStatus.ACCEPTED }
-    val activeOrdersCount = orders.count { it.status == OrderStatus.PLACED || it.status == OrderStatus.ACCEPTED || it.status == OrderStatus.PREPARING || it.status == OrderStatus.READY }
+    // Key metrics required for Vendor Dashboard
+    val activeFoodItemsCount = foodItems.count { it.isAvailable }
+    val totalFoodItemsCount = foodItems.size
+    val pendingOrdersCount = orders.count { it.status == OrderStatus.PLACED }
+    val preparingOrdersCount = orders.count { it.status == OrderStatus.PREPARING }
+    val completedOrdersCount = orders.count { it.status == OrderStatus.COLLECTED }
     val completedOrdersRevenue = orders
         .filter { it.status == OrderStatus.COLLECTED }
         .sumOf { it.totalAmount }
+
+    val recentActionableOrders = orders.filter {
+        it.status == OrderStatus.PLACED || it.status == OrderStatus.ACCEPTED || it.status == OrderStatus.PREPARING
+    }.take(3)
 
     Scaffold(
         topBar = {
@@ -119,26 +138,66 @@ fun VendorDashboardScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        vendor?.openingHours?.let { hours ->
+                            Text(
+                                text = "Hours: $hours",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
 
-            // Stat Cards Grid
+            // Optional Stall Switcher if multiple stalls exist
+            if (allVendors.size > 1) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "Switch Stall",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(allVendors) { v ->
+                                FilterChip(
+                                    selected = v.id == currentVendorId,
+                                    onClick = { viewModel.selectVendor(v.id) },
+                                    label = { Text(v.name) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Store,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Stat Cards Grid: Exact metrics specified
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     MetricCard(
-                        title = "Pending",
-                        value = "$pendingOrdersCount",
-                        icon = Icons.Default.HourglassTop,
+                        title = "Active Food Items",
+                        value = "$activeFoodItemsCount / $totalFoodItemsCount",
+                        icon = Icons.Default.Fastfood,
                         modifier = Modifier.weight(1f)
                     )
                     MetricCard(
-                        title = "Active Orders",
-                        value = "$activeOrdersCount",
-                        icon = Icons.Default.Receipt,
+                        title = "Pending Orders",
+                        value = "$pendingOrdersCount",
+                        icon = Icons.Default.HourglassTop,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -150,18 +209,27 @@ fun VendorDashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     MetricCard(
-                        title = "Menu Items",
-                        value = "${foodItems.size}",
-                        icon = Icons.Default.Fastfood,
+                        title = "Orders Preparing",
+                        value = "$preparingOrdersCount",
+                        icon = Icons.Default.Restaurant,
                         modifier = Modifier.weight(1f)
                     )
                     MetricCard(
-                        title = "Completed Sales",
-                        value = CurrencyFormatter.format(completedOrdersRevenue),
-                        icon = Icons.Default.Payments,
+                        title = "Completed Orders",
+                        value = "$completedOrdersCount",
+                        icon = Icons.Default.CheckCircle,
                         modifier = Modifier.weight(1f)
                     )
                 }
+            }
+
+            item {
+                MetricCard(
+                    title = "Total Sales from Completed Orders",
+                    value = CurrencyFormatter.format(completedOrdersRevenue),
+                    icon = Icons.Default.Payments,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             // Quick Nav Links
@@ -176,7 +244,7 @@ fun VendorDashboardScreen(
             item {
                 ActionNavCard(
                     title = "Menu & Food Items",
-                    subtitle = "Add, edit, or toggle availability of dishes",
+                    subtitle = "Add, edit, or toggle availability of dishes ($activeFoodItemsCount active)",
                     icon = Icons.Default.Fastfood,
                     onClick = onNavigateToFoodManagement
                 )
@@ -185,10 +253,97 @@ fun VendorDashboardScreen(
             item {
                 ActionNavCard(
                     title = "Live Incoming Orders",
-                    subtitle = "Accept orders and update kitchen progress",
+                    subtitle = "Accept, prepare, and complete customer orders ($pendingOrdersCount pending)",
                     icon = Icons.Default.Receipt,
                     onClick = onNavigateToOrders
                 )
+            }
+
+            // Actionable Incoming Orders Shortcut
+            if (recentActionableOrders.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Orders Requiring Kitchen Action",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                items(recentActionableOrders) { order ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = order.orderNumber,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                StatusBadge(status = order.status)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Student: ${order.studentName}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Total: ${CurrencyFormatter.format(order.totalAmount)}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                when (order.status) {
+                                    OrderStatus.PLACED -> {
+                                        Button(
+                                            onClick = { viewModel.updateOrderStatus(order.id, OrderStatus.ACCEPTED) },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("Accept", fontSize = 12.sp)
+                                        }
+                                        OutlinedButton(
+                                            onClick = { viewModel.updateOrderStatus(order.id, OrderStatus.REJECTED) },
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("Reject", fontSize = 12.sp)
+                                        }
+                                    }
+                                    OrderStatus.ACCEPTED -> {
+                                        Button(
+                                            onClick = { viewModel.updateOrderStatus(order.id, OrderStatus.PREPARING) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("Start Preparation", fontSize = 12.sp)
+                                        }
+                                    }
+                                    OrderStatus.PREPARING -> {
+                                        Button(
+                                            onClick = { viewModel.updateOrderStatus(order.id, OrderStatus.READY) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("Mark as Ready", fontSize = 12.sp)
+                                        }
+                                    }
+                                    else -> Unit
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -12,17 +12,57 @@ import {
   UtensilsCrossed,
   FileCode,
   LayoutDashboard,
-  ShoppingBag
+  ShoppingBag,
+  Wifi,
+  Globe,
+  AlertCircle,
+  RefreshCw,
+  Code2
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'architecture' | 'screens' | 'entities' | 'export'>('architecture');
+  const [activeTab, setActiveTab] = useState<'architecture' | 'screens' | 'network' | 'xml' | 'entities' | 'export'>('architecture');
+  const [demoResponse, setDemoResponse] = useState<string | null>(null);
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
+
+  const fetchLiveDemoJson = async () => {
+    setIsLoadingDemo(true);
+    try {
+      const res = await fetch('/api/demo-vendors.json');
+      const data = await res.json();
+      setDemoResponse(JSON.stringify(data, null, 2));
+    } catch (err: any) {
+      setDemoResponse(`Error fetching live JSON: ${err?.message || err}`);
+    } finally {
+      setIsLoadingDemo(false);
+    }
+  };
 
   const screens = [
     { category: 'Authentication & Security', items: ['Login (LoginScreen.kt) with Role-Aware Routing', 'Student Registration (RegisterScreen.kt) with Strict Student-Only Enforcement', 'SessionManager (Persistent SharedPreferences + StateFlow)', 'Salted SHA-256 PasswordHasher & CredentialValidator', 'Route-Level Role-Based Access Control (RBAC) Guard'] },
-    { category: 'Student Module', items: ['Student Home (StudentHomeScreen.kt)', 'Campus Vendors (VendorsScreen.kt)', 'Menu & Dietary Flags (MenuScreen.kt)', 'Cart & Preparation Notes (CartScreen.kt)', 'Order Status & 4-Digit PIN (OrderStatusScreen.kt)', 'Order History (OrderHistoryScreen.kt)'] },
+    { category: 'Student Module', items: ['Student Home (StudentHomeScreen.kt)', 'Campus Vendors (VendorsScreen.kt) with Remote Demo Quick-Action', 'Menu & Dietary Flags (MenuScreen.kt)', 'Cart & Preparation Notes (CartScreen.kt)', 'Order Status & 4-Digit PIN (OrderStatusScreen.kt)', 'Order History (OrderHistoryScreen.kt)'] },
     { category: 'Vendor Module', items: ['Vendor Dashboard (VendorDashboardScreen.kt)', 'Food Item Management & Availability (FoodManagementScreen.kt)', 'Vendor Incoming Orders & Kitchen Workflow (VendorOrdersScreen.kt)'] },
-    { category: 'Admin Module', items: ['Admin Dashboard (AdminDashboardScreen.kt)', 'User Management (UserManagementScreen.kt)', 'Vendor Stalls Management (VendorManagementScreen.kt)', 'Audit Reports & Financials (ReportsScreen.kt)'] }
+    { category: 'Admin Module (Complete Room Workflow)', items: [
+      'Admin Dashboard (AdminDashboardScreen.kt): Room metrics (Total Users, Students, Vendors, Orders, Pending, Completed, Platform Revenue)',
+      'User Management (UserManagementScreen.kt): View users, roles, email, registration details, toggle disable/enable, safe delete dialog',
+      'Vendor Stalls Management (VendorManagementScreen.kt): Register vendors, assign login credentials, edit name/description, live food count, availability status',
+      'System Reports (ReportsScreen.kt): Total orders, orders by status, orders per vendor, total order value, popular food items calculated directly from SQLite Room DB',
+      'Security & Access Control: Role-based authorization guard strictly protecting every admin destination'
+    ] },
+    { category: 'Networking & Remote API Demonstration', items: [
+      'Remote Demo Screen (RemoteDemoScreen.kt): Live asynchronous HTTP GET, loading spinner, error banners, JSON response viewer',
+      'Native Lightweight Client (RemoteDemoHttpClient.kt): HttpURLConnection running on Dispatchers.IO with zero external heavy libraries',
+      'Strict Offline-First Isolation: Complete decoupling from Room SQLite, ensuring offline food ordering is never blocked by internet issues',
+      'Response DTOs & Parsing: RemoteVendorDto, RemoteMenuItemDto, RemoteCampusVendorsResponse models parsing real JSON',
+      'Fault Resilience Testing: Preconfigured endpoints to test Success (200 OK), HTTP 500 Server Error, HTTP 404 Not Found, and Offline timeout simulation'
+    ] },
+    { category: 'XML Data Processing Demonstration', items: [
+      'XML Demo Screen (XmlDemoScreen.kt): Live XmlPullParser execution, tag telemetry counters, category chips, and raw XML inspector',
+      'Android Native XmlPullParser (CampusFoodXmlParser.kt): Low-memory forward-only event-driven streaming parser (START_TAG, TEXT, END_TAG)',
+      'XML Resource File (campus_food_data.xml): Hierarchical vendor catalogs, building locations, menu items, dietary attributes, allergens',
+      'Kotlin Data Objects (XmlFoodModels.kt): XmlCampusDining, XmlVendor, XmlFoodItem classes cleanly decoupled from SQLite entities',
+      'Proof-of-Parsing Injection: Dynamic node injection and re-parsing proving live event parsing rather than hard-coded objects'
+    ] }
   ];
 
   const entities = [
@@ -112,6 +152,26 @@ export default function App() {
               }`}
             >
               <Navigation className="w-4 h-4" /> Top-Level Destinations
+            </button>
+            <button
+              onClick={() => setActiveTab('network')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                activeTab === 'network'
+                  ? 'bg-orange-600 text-white shadow'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Wifi className="w-4 h-4" /> Remote HTTP Demo
+            </button>
+            <button
+              onClick={() => setActiveTab('xml')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                activeTab === 'xml'
+                  ? 'bg-orange-600 text-white shadow'
+                  : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Code2 className="w-4 h-4" /> XML Data Demo
             </button>
             <button
               onClick={() => setActiveTab('entities')}
@@ -277,6 +337,149 @@ export default function App() {
                 </ul>
               </div>
             ))}
+          </div>
+        )}
+
+        {activeTab === 'network' && (
+          <div className="space-y-6">
+            <div className="p-6 rounded-2xl bg-neutral-950 border border-neutral-800">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 rounded-lg bg-orange-500/10 text-orange-400">
+                  <Wifi className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">Isolated Remote Networking Demonstration</h3>
+                  <p className="text-xs text-neutral-400">Proof-of-concept HTTP client & JSON parser with zero coupling to Room SQLite</p>
+                </div>
+              </div>
+              <p className="text-sm text-neutral-300 leading-relaxed mb-4">
+                Campus Eats features a strictly isolated network layer (<code className="text-orange-400">com.campuseats.data.network.demo</code>) that requests live cafeteria demonstration menus from real HTTP endpoints. If the network is unavailable or returns an error, the core Room database remains completely operational and unaffected.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-6">
+                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+                  <div className="font-bold text-emerald-400 mb-1">1. Asynchronous I/O</div>
+                  <div className="text-neutral-400">Network calls execute exclusively on <code className="text-neutral-300">Dispatchers.IO</code> via coroutines to prevent UI blocking.</div>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+                  <div className="font-bold text-blue-400 mb-1">2. Sealed StateFlow</div>
+                  <div className="text-neutral-400"><code className="text-neutral-300">NetworkResult</code> manages <span className="text-neutral-300 font-semibold">Idle, Loading, Success, Error</span> states reactively.</div>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+                  <div className="font-bold text-purple-400 mb-1">3. Offline-First Guard</div>
+                  <div className="text-neutral-400">Zero foreign keys or database bindings; network failures gracefully fall back to local Room storage.</div>
+                </div>
+              </div>
+
+              {/* Live JSON Endpoint Preview */}
+              <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-orange-400">Live Endpoint Inspection</span>
+                    <p className="text-xs text-neutral-400">GET <code className="text-neutral-300">/api/demo-vendors.json</code></p>
+                  </div>
+                  <button
+                    onClick={fetchLiveDemoJson}
+                    disabled={isLoadingDemo}
+                    className="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDemo ? 'animate-spin' : ''}`} />
+                    {isLoadingDemo ? 'Fetching...' : 'Test HTTP GET'}
+                  </button>
+                </div>
+
+                {demoResponse ? (
+                  <pre className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-xs overflow-x-auto max-h-64 leading-tight">
+                    {demoResponse}
+                  </pre>
+                ) : (
+                  <div className="text-xs text-neutral-500 italic p-4 text-center border border-dashed border-neutral-800 rounded-lg">
+                    Click "Test HTTP GET" above to perform a live fetch from the Campus Eats demonstration endpoint.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'xml' && (
+          <div className="space-y-6">
+            <div className="p-6 rounded-2xl bg-neutral-950 border border-neutral-800">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 rounded-lg bg-orange-500/10 text-orange-400">
+                  <Code2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">Android XMLPullParser Data Processing Demonstration</h3>
+                  <p className="text-xs text-neutral-400">Hierarchical XML parsing, Kotlin data models, and Compose rendering</p>
+                </div>
+              </div>
+              <p className="text-sm text-neutral-300 leading-relaxed mb-4">
+                Campus Eats includes an academic course demonstration (<code className="text-orange-400">com.campuseats.data.xml</code>) that loads hierarchical campus dining and vendor data from an XML resource file, streams through it using Android's native <code className="text-orange-400">XmlPullParser</code>, converts events into strongly typed Kotlin data classes, and renders them in Jetpack Compose.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-6">
+                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+                  <div className="font-bold text-emerald-400 mb-1">1. Event-Driven Pull Parser</div>
+                  <div className="text-neutral-400">Uses <code className="text-neutral-300">XmlPullParser</code> (START_TAG, TEXT, END_TAG) for low-memory, zero-overhead forward streaming.</div>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+                  <div className="font-bold text-blue-400 mb-1">2. Strong Kotlin DTOs</div>
+                  <div className="text-neutral-400">Converts nested nodes into <code className="text-neutral-300">XmlCampusDining</code>, <code className="text-neutral-300">XmlVendor</code>, and <code className="text-neutral-300">XmlFoodItem</code> data classes.</div>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800">
+                  <div className="font-bold text-purple-400 mb-1">3. Proof of Dynamic Parsing</div>
+                  <div className="text-neutral-400">UI displays live tag/attribute metrics, parse execution times (ms), and supports live node injection &amp; re-parsing.</div>
+                </div>
+              </div>
+
+              {/* XML Source Sample Display */}
+              <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-orange-400">Sample Resource File</span>
+                    <p className="text-xs text-neutral-400"><code className="text-neutral-300">app/src/main/res/xml/campus_food_data.xml</code></p>
+                  </div>
+                  <span className="text-xs px-2.5 py-1 rounded bg-neutral-800 text-neutral-300 font-mono">
+                    ~4.5 KB • 74 Tags • 19 Attributes
+                  </span>
+                </div>
+
+                <pre className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono text-xs overflow-x-auto max-h-72 leading-relaxed">
+{`<?xml version="1.0" encoding="utf-8"?>
+<campusDining campus="University Main Campus" version="1.2" generated="2026-09-22">
+    <metadata>
+        <title>University Food &amp; Vendor Directory</title>
+        <curriculumTopic>Android XMLPullParser &amp; Hierarchical Data Processing</curriculumTopic>
+    </metadata>
+    <vendors>
+        <vendor id="VND-XML-01" category="Grill &amp; Fast Food" status="OPEN">
+            <name>The Crimson Grill</name>
+            <building>Student Union Building - Ground Floor</building>
+            <rating>4.7</rating>
+            <openingHours>08:00 - 18:00</openingHours>
+            <acceptsStudentCard>true</acceptsStudentCard>
+            <menuItems>
+                <item id="ITEM-XML-101" vegetarian="false">
+                    <name>Braai Beef Burger &amp; Chips</name>
+                    <category>Mains</category>
+                    <price>58.50</price>
+                    <calories>680</calories>
+                    <description>Flame-grilled beef patty with caramelized onions and rustic chips.</description>
+                </item>
+                <!-- Additional food items and vendors... -->
+            </menuItems>
+        </vendor>
+    </vendors>
+</campusDining>`}
+                </pre>
+
+                <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-between text-xs text-neutral-400">
+                  <span>Room Database Status: <strong className="text-emerald-400">Active &amp; Untouched</strong></span>
+                  <span>UI Engine: <strong className="text-orange-400">100% Jetpack Compose</strong></span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

@@ -30,4 +30,8 @@ sealed class NavRoutes(val route: String) {
     data object UserManagement : NavRoutes("admin_user_management")
     data object VendorManagement : NavRoutes("admin_vendor_management")
     data object Reports : NavRoutes("admin_reports")
+
+    // Demonstration destinations (HTTP Network & XML Processing Demos)
+    data object RemoteDataDemo : NavRoutes("remote_data_demo")
+    data object XmlDataDemo : NavRoutes("xml_data_demo")
 }
